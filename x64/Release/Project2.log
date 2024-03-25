@@ -1,0 +1,21 @@
+﻿  Game.cpp
+C:\Users\VictorPC\source\repos\Project2\Project2\Game.h(8,2): warning C4091: 'typedef ': ignored on left of 'POINT' when no variable is declared
+  (compiling source file 'Game.cpp')
+  
+C:\Users\VictorPC\source\repos\Project2\Project2\Game.h(12,2): warning C4091: 'typedef ': ignored on left of 'COORD' when no variable is declared
+  (compiling source file 'Game.cpp')
+  
+C:\Users\VictorPC\source\repos\Project2\Project2\Game.cpp(26,12): warning C4244: 'argument': conversion from 'time_t' to 'unsigned int', possible loss of data
+C:\Users\VictorPC\source\repos\Project2\Project2\Game.cpp(114,24): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
+C:\Users\VictorPC\source\repos\Project2\Project2\Game.cpp(115,24): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
+C:\Users\VictorPC\source\repos\Project2\Project2\Game.cpp(250,68): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
+C:\Users\VictorPC\source\repos\Project2\Project2\Game.cpp(250,14): warning C4244: 'initializing': conversion from 'float' to 'const int', possible loss of data
+C:\Users\VictorPC\source\repos\Project2\Project2\Game.cpp(251,68): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
+C:\Users\VictorPC\source\repos\Project2\Project2\Game.cpp(251,14): warning C4244: 'initializing': conversion from 'float' to 'const int', possible loss of data
+C:\Users\VictorPC\source\repos\Project2\Project2\Game.cpp(302,59): warning C4805: '==': unsafe mix of type 'bool' and type 'int' in operation
+  Generating code
+  9 of 98 functions ( 9.2%) were compiled, the rest were copied from previous compilation.
+    4 functions were new in current compilation
+    8 functions had inline decision re-evaluated but remain unchanged
+  Finished generating code
+  Project2.vcxproj -> C:\Users\VictorPC\source\repos\Project2\x64\Release\Project2.exe
