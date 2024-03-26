@@ -2,11 +2,11 @@
 #include "SFML/Graphics.hpp"
 #include <stdlib.h>
 
-typedef struct POINT
+struct POINT
 {
 	int x,y;
 };
-typedef struct COORD
+struct COORD
 {
 	float x, y;
 };
@@ -14,10 +14,10 @@ typedef struct COORD
 enum {
 	onHorizontal,onVertical
 };
-
 enum {
-	left,down,right,up
+	above=1,below
 };
+
 
 class Game
 {
@@ -31,8 +31,8 @@ private:
 		sf::Sprite	sprite;
 		COORD		coord;		//relative la mijlocul bomboanei
 		int			noCandy;
+		int			swaped = 0;		// 0-false  1-candy moving above 2-candy moving below 
 		bool		destroyed = false;
-		bool		swaped = false;
 		bool		toggled = false;
 
 	}
@@ -48,6 +48,7 @@ private:
 	void initializareMatrice(void);
 	void incarcareImagini(void);
 	void handleEvents(void);
+	void setPositonOfSprites(void);
 
 	void draw();
 	POINT parseCoord(POINT coord);

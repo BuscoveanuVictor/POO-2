@@ -3,7 +3,6 @@
 #include <cstdlib>
 #include <stdio.h>
 #include <stdlib.h>
-#include "SFML/Graphics.hpp"
 
 #define	MDIM			7		//Dim matrice
 #define WIDTH_CANDY		133
@@ -12,17 +11,36 @@
 #define SECUNDA			1000	//Milisec
 #define TIME_EVENT		10		//Milisec -> repezinta timpul cu care se intampla un event
 
+
+
+///// Functii ajutatoare //////
+
 bool operator == (POINT v1, POINT v2)
 {
 	return (v1.x - v2.x) + (v1.y - v2.y) == 0;
 }
 
-/*
-	Se initializeaza structurile de date candy cu numarul
-	bomboanei si textura(poza) corespunzatoare
-*/
+POINT Game::parseCoord(POINT coord)
+{
+	POINT res;
+
+	res.x = (coord.x + 1) / (WIDTH_CANDY * SCALE);
+	res.y = (coord.y + 1) / (HEIGHT_CANDY * SCALE);
+
+	return res;
+
+}
+
+///////////////////////////////
+
+
+
 void Game::initializareMatrice(void) 
 {
+
+	// Se initializeaza structurile de date candy cu numarul
+	// bomboanei, textura(poza) corespunzatoare si sprite ul cu scale-ul initial
+
 	srand(time(0));
 	for (int i = 0; i < MDIM; i++)
 		for (int j = 0; j < MDIM; j++)
@@ -37,6 +55,7 @@ void Game::initializareMatrice(void)
 
 			M[i][j].sprite.setScale({ SCALE,SCALE });
 
+
 			// se stabilesc coord fiecarui sprite relativ la coord bomboanei
 		/*	M[i][j].sprite.setPosition
 			(M[i][j].coord.x - (WIDTH_CANDY * SCALE) / 2, 
@@ -46,7 +65,6 @@ void Game::initializareMatrice(void)
 
 void Game::incarcareImagini(void) 
 {	
-
 	sf::Image candies;
 	if (!candies.loadFromFile("images/candies.png")) 
 	{
@@ -57,6 +75,48 @@ void Game::incarcareImagini(void)
 		imgCandy[i].loadFromImage
 			(candies, sf::IntRect(i * WIDTH_CANDY, 0, WIDTH_CANDY, HEIGHT_CANDY));
 }
+
+void Game::setPositonOfSprites(void)
+{
+	for (int i = 0; i < MDIM; i++)
+		for (int j = 0; j < MDIM; j++)
+		{
+			M[i][j].sprite.setPosition
+			(M[i][j].coord.x - (WIDTH_CANDY *  M[i][j].sprite.getScale().x) / 2,
+				M[i][j].coord.y - (HEIGHT_CANDY * M[i][j].sprite.getScale().y) / 2);
+		}
+}
+
+void Game::draw(void)
+{
+	window.clear(sf::Color::Cyan);
+
+	setPositonOfSprites();
+
+	POINT aboveCandy = {-1,-1}, belowCandy ;
+	for (int i = 0; i < MDIM; i++)
+		for (int j = 0; j < MDIM; j++)
+			if (M[i][j].swaped == above)
+				aboveCandy = {i,j};
+			else if (M[i][j].swaped == below)
+				belowCandy = {i,j};
+			else
+				window.draw(M[i][j].sprite);
+	
+	
+	// Trebuie desenata intai bomboana care trece pe dedesupt iar apoi
+	// cea care trece pe deasupra ca sa fie creata iluzia de trecere pe deasupra
+	
+	if (!(aboveCandy == POINT{-1,-1}))
+	{
+		window.draw(M[aboveCandy.x][aboveCandy.y].sprite);
+		window.draw(M[belowCandy.x][belowCandy.y].sprite);
+	}
+
+	window.display();
+}
+
+
 
 void Game::handleEvents(void) 
 {
@@ -89,77 +149,60 @@ void Game::handleEvents(void)
 	}
 }
 
-void Game::draw()
-{
-	window.clear(sf::Color::Cyan);
-
-	for (int i = 0; i < MDIM; i++)
-		for (int j = 0; j < MDIM; j++)
-		{
-			M[i][j].sprite.setPosition
-			(M[i][j].coord.x - (WIDTH_CANDY *  M[i][j].sprite.getScale().x) / 2,
-				M[i][j].coord.y - (HEIGHT_CANDY * M[i][j].sprite.getScale().y) / 2);
-
-			window.draw(M[i][j].sprite);
-		}
-
-	window.display();
-}
-
-
-POINT Game::parseCoord(POINT coord)
-{
-	POINT res;
-
-	res.x = (coord.x + 1) / (WIDTH_CANDY * SCALE);
-	res.y = (coord.y + 1) / (HEIGHT_CANDY * SCALE);
-
-	return res;
-
-}
 
 void Game::swapCandies(sf::Event e)
 {
 	if (mouse.pressed)
 	{
-		POINT currentPos = parseCoord({e.mouseMove.x,e.mouseMove.y});
-		
+		POINT currentPos = parseCoord({e.mouseMove.x,e.mouseMove.y}); 
+
+		// current pos celula pe care se afla mouse-ul in de fiecare data cand se misca
+		// mouse.coodM este pozitia celulei cand s-a dat click 
+
 		if (!(currentPos == mouse.coordM))
 		{
 
 			POINT previousPos = mouse.coordM; // coord obtinute la eventimentul click(mouse down)		
 
-			std::cout << "Pe asta sunt cu mouse ul ->" << '(' << currentPos.x << ',' << currentPos.y << ')'
-				<< " fac swap cu ala pe care am fost " << "  (" << previousPos.x << ',' << previousPos.y << ')' << '\n';
+			// std::cout << "Pe asta sunt cu mouse ul ->" << '(' << currentPos.x << ',' << currentPos.y << ')'
+			// 	<< " fac swap cu ala pe care am fost " << "  (" << previousPos.x << ',' << previousPos.y << ')' << '\n';
 			
-			// Pana aici am obtinut info despre coord in M ale bomboanelor care trebuie sa fie schimbate(swap) //
-
-
-			// Mai departe trebuie sa se realizeze animatia de swap indifierent daca se distrung //
+			// Mai departe trebuie sa se realizeze animatia de swap indifierent daca se distrug //
 			// sau nu niste bomboane, mai apoi vom face aceasta verificare //
 
-			
+			// Aici sunt marcate bomboanele care trec pe deasupra/dedesupt
+			// pentru a fi afisate corespunzator
+			M[currentPos.x][currentPos.y].swaped = above;
+			M[mouse.coordM.x][mouse.coordM.y].swaped = below;
+
+
+			// Se incepe animatia si se returneaza true atunci cand se termina
 			if (swapAnimation(previousPos, currentPos)) 
 			{
-				mouse.pressed = false;
+				// Dupa ce se termina se realizeaza urmatoarele
+				
+				// 1. se face swap-ul in matrice dintre bomboane
+				std::swap(M[currentPos.x][currentPos.y], M[mouse.coordM.x][mouse.coordM.y]);
+				
+				// 2. se numara in matrice daca se indeplineste conditia de spargere de bomboane
+				POINT counterCandyAbove, counterCandyBelow;
+				counterCandyAbove = CountCandies(currentPos);
+				counterCandyBelow = CountCandies(mouse.coordM);
 
-				std::swap(M[currentPos.x][currentPos.y],
-					M[mouse.coordM.x][mouse.coordM.y]);
+				if (!(counterCandyAbove.x >=3 || counterCandyAbove.y >=3 ||
+					counterCandyBelow.x >=3 || counterCandyAbove.y >=3 ))
+					{
+
+						// 3. daca nu se indeplineste se face swap back(la pozitile initiale)
+						swapAnimation(currentPos,previousPos);
+						std::swap(M[currentPos.x][currentPos.y], M[mouse.coordM.x][mouse.coordM.y]);
+					}
 			}
-		
 
-			// Aici se va face algoritmul de destroy 
-
-			/*
-
-
-			
-			POINT counter;
-			counter = CountCandies(currentPos);
-			
-			std::cout << counter.x << ' ' << counter.y << '\n';
+			// se revine la starile initiale
 			mouse.pressed = false;
-			draw();*/
+			M[currentPos.x][currentPos.y].swaped = false;
+			M[mouse.coordM.x][mouse.coordM.y].swaped = false;
 		}
 	}
 }
@@ -167,7 +210,7 @@ void Game::swapCandies(sf::Event e)
 
 bool Game::swapAnimation(POINT coordMSelectedCandy, POINT coordMToSwapCandy)
 {
-	sf::Clock clock = sf::Clock::Clock();
+	sf::Clock clock = sf::Clock();
 	sf::Time previousTime;							// secunda 0 
 	sf::Time currentTime = clock.getElapsedTime();	// timpul trecut 
 
@@ -178,6 +221,12 @@ bool Game::swapAnimation(POINT coordMSelectedCandy, POINT coordMToSwapCandy)
 	int y = coordMSelectedCandy.y - coordMToSwapCandy.y;
 
 	POINT direction = { x, y };
+
+	//direction
+	// (0,-1) sus
+	// (0, 1) jos
+	// (-1,0) stanga
+	// ( 1,0) dreapta
 
 	while (1) {
 		currentTime = clock.getElapsedTime();
@@ -200,9 +249,13 @@ bool Game::swapAnimation(POINT coordMSelectedCandy, POINT coordMToSwapCandy)
 			draw();
 			previousTime = currentTime;
 
-			if (isFinishedMoveAbove && isFinishedMoveBelow)return true;
+			if (isFinishedMoveAbove && isFinishedMoveBelow){
+				
+				return true;
+			}
 		}
 	}
+
 }
 
 bool Game::moveAboveAnimation(POINT coordM,POINT direction, float current,float goal)
@@ -220,6 +273,7 @@ bool Game::moveAboveAnimation(POINT coordM,POINT direction, float current,float 
 
 	// se updateaza scale-ul sprite ului
 	M[coordM.x][coordM.y].sprite.setScale(currentScale, currentScale);
+
 
 	// se muta bomboana pe axele de coord
 	M[coordM.x][coordM.y].coord.x -= direction.x * (WIDTH_CANDY * SCALE) / ((SECUNDA * .5f) / TIME_EVENT);
@@ -257,8 +311,6 @@ bool Game::moveOnLineAnimation(POINT coordM, POINT direction)
 	if ((direction.x == 1 && M[coordM.x][coordM.y].coord.x >= i) || (direction.x == -1 && M[coordM.x][coordM.y].coord.x <= i))
 		return true;
 
-	/*if (((direction.y & 1)&&(M[coordM.x][coordM.y].coord.y >= j)) || ((direction.y & (-1)) && (M[coordM.x][coordM.y].coord.y <= j)))
-		return true;*/
 
 	return false; 
 }
