@@ -1,19 +1,25 @@
-#include "Game.h"
+#include "Game.hpp"
 #include "iostream"
 #include <cstdlib>
 #include <stdio.h>
 #include <stdlib.h>
+#include <vector>
 
-#define	MDIM			7		//Dim matrice
-#define WIDTH_CANDY		133
-#define HEIGHT_CANDY    138
-#define SCALE			0.5f
-#define SECUNDA			1000	//Milisec
-#define TIME_EVENT		10		//Milisec -> repezinta timpul cu care se intampla un event
-
+#define	MDIM				7		//Dim matrice
+#define WIDTH_CANDY			133
+#define HEIGHT_CANDY    	138
+#define SCALE				0.5f
+#define SECUNDA				1000	//Milisec
+#define TIME_EVENT_SWAP		10		//Milisec -> repezinta timpul cu care se intampla un event de tip swap
+#define TIME_EVENT_DESTROY	5		
 
 
 ///// Functii ajutatoare //////
+
+std::ostream& operator<<(std::ostream& out, const POINT& P){
+	out << '(' << P.x << ' ' << P.y << ')' << '\n';
+	return out;
+}
 
 bool operator == (POINT v1, POINT v2)
 {
@@ -32,6 +38,23 @@ POINT Game::parseCoord(POINT coord)
 }
 
 ///////////////////////////////
+
+void Game::AfisareMatrice(void)
+{
+	std::cout << '\n';
+	for(int j=0; j<MDIM; j++)
+	{
+		for(int i=0; i<MDIM; i++){
+			
+			if(M[i][j].noCandy ==-1){
+				std::cout << ' ';
+			}else std::cout << "  ";
+			std::cout << M[i][j].noCandy;
+		}
+		std::cout << '\n';
+	}
+	std::cout << '\n';
+}
 
 
 
@@ -107,6 +130,9 @@ void Game::draw(void)
 	// Trebuie desenata intai bomboana care trece pe dedesupt iar apoi
 	// cea care trece pe deasupra ca sa fie creata iluzia de trecere pe deasupra
 	
+	// Fac verificare asta ca s-a afiseze cele doua bomboane 
+	// doar atunci cand se intampla eventul de swapCanidies
+	// dar in rest, cand se intampla o afisare normala nu se intra 
 	if (!(aboveCandy == POINT{-1,-1}))
 	{
 		window.draw(M[aboveCandy.x][aboveCandy.y].sprite);
@@ -157,15 +183,17 @@ void Game::swapCandies(sf::Event e)
 		POINT currentPos = parseCoord({e.mouseMove.x,e.mouseMove.y}); 
 
 		// current pos celula pe care se afla mouse-ul in de fiecare data cand se misca
-		// mouse.coodM este pozitia celulei cand s-a dat click 
+		// mouse.coodM este pozitia celulei cand s-a dat click
+		
+		// std::cout << "current :" <<currentPos;
+		// std::cout << "mouse :" <<mouse.coordM;
 
-		if (!(currentPos == mouse.coordM))
+		if (!(currentPos == mouse.coordM) && 
+		((abs(currentPos.x-mouse.coordM.x) + abs(currentPos.y-mouse.coordM.y)) == 1))
+		// o verificare, pt bomboana cu care vr sa fac swap sa se afle intr-o casuta alaturata
 		{
 
 			POINT previousPos = mouse.coordM; // coord obtinute la eventimentul click(mouse down)		
-
-			// std::cout << "Pe asta sunt cu mouse ul ->" << '(' << currentPos.x << ',' << currentPos.y << ')'
-			// 	<< " fac swap cu ala pe care am fost " << "  (" << previousPos.x << ',' << previousPos.y << ')' << '\n';
 			
 			// Mai departe trebuie sa se realizeze animatia de swap indifierent daca se distrug //
 			// sau nu niste bomboane, mai apoi vom face aceasta verificare //
@@ -173,8 +201,7 @@ void Game::swapCandies(sf::Event e)
 			// Aici sunt marcate bomboanele care trec pe deasupra/dedesupt
 			// pentru a fi afisate corespunzator
 			M[currentPos.x][currentPos.y].swaped = above;
-			M[mouse.coordM.x][mouse.coordM.y].swaped = below;
-
+			M[previousPos.x][previousPos.y].swaped = below;
 
 			// Se incepe animatia si se returneaza true atunci cand se termina
 			if (swapAnimation(previousPos, currentPos)) 
@@ -182,27 +209,49 @@ void Game::swapCandies(sf::Event e)
 				// Dupa ce se termina se realizeaza urmatoarele
 				
 				// 1. se face swap-ul in matrice dintre bomboane
-				std::swap(M[currentPos.x][currentPos.y], M[mouse.coordM.x][mouse.coordM.y]);
+				std::swap(M[currentPos.x][currentPos.y], M[previousPos.x][previousPos.y]);
 				
 				// 2. se numara in matrice daca se indeplineste conditia de spargere de bomboane
-				POINT counterCandyAbove, counterCandyBelow;
-				counterCandyAbove = CountCandies(currentPos);
-				counterCandyBelow = CountCandies(mouse.coordM);
+				// CountAndMarkCandies numara si marcheaza cate bomboane de acelasi tip 
+				// cu bomboanele mutate sunt pe linii
+				POINT counterCandiesAbove, counterCandiesBelow;
+				counterCandiesAbove = CountAndMarkCandies(currentPos);
+				counterCandiesBelow = CountAndMarkCandies(previousPos);	
 
-				if (!(counterCandyAbove.x >=3 || counterCandyAbove.y >=3 ||
-					counterCandyBelow.x >=3 || counterCandyAbove.y >=3 ))
-					{
+				// std::cout << counterCandiesAbove;
+				// std::cout << counterCandiesBelow;
 
-						// 3. daca nu se indeplineste se face swap back(la pozitile initiale)
-						swapAnimation(currentPos,previousPos);
-						std::swap(M[currentPos.x][currentPos.y], M[mouse.coordM.x][mouse.coordM.y]);
-					}
+				bool swapBack = true;
+
+				if(counterCandiesAbove.x >= 3 || counterCandiesAbove.y>=3)
+				{	
+					M[currentPos.x][currentPos.y].marked = true;
+					swapBack = false;
+				}
+				if (counterCandiesBelow.x >=3 || counterCandiesBelow.y >=3)
+				{
+					M[previousPos.x][previousPos.y].marked = true;
+					swapBack = false;
+				}
+
+				if (swapBack){
+					std::cout << "nu";
+					MarkedCandiesEvent(false);
+
+					// 3. daca nu se indeplineste se face swap back(la pozitile initiale)
+					swapAnimation(currentPos,previousPos);
+					std::swap(M[currentPos.x][currentPos.y], M[mouse.coordM.x][mouse.coordM.y]);
+				}
+				else {
+					MarkedCandiesEvent(true);
+				}
+
 			}
 
 			// se revine la starile initiale
 			mouse.pressed = false;
 			M[currentPos.x][currentPos.y].swaped = false;
-			M[mouse.coordM.x][mouse.coordM.y].swaped = false;
+			M[previousPos.x][previousPos.y].swaped = false;
 		}
 	}
 }
@@ -232,7 +281,7 @@ bool Game::swapAnimation(POINT coordMSelectedCandy, POINT coordMToSwapCandy)
 		currentTime = clock.getElapsedTime();
 		
 		// la fiecare TIME_EVENT(10 milisecunde) se intampla ce e mai jos
-		if ( currentTime.asMilliseconds() - previousTime.asMilliseconds() == TIME_EVENT)
+		if ( currentTime.asMilliseconds() - previousTime.asMilliseconds() == TIME_EVENT_SWAP)
 		{
 			
 			// Bomboana care trebuie sa treaca pe deasupra
@@ -260,11 +309,14 @@ bool Game::swapAnimation(POINT coordMSelectedCandy, POINT coordMToSwapCandy)
 
 bool Game::moveAboveAnimation(POINT coordM,POINT direction, float current,float goal)
 {
+	// variabilele de mai jos fiind statice 
 	// se comporta ca niste variabile globale
-	// acestea sunt initializate cu parametrii fct o ~singura data~
+	// astfel acestea sunt initializate cu param. fct 
+	// o ~singura data~ si NU de fiecare data
+	// cand se intra in while-ul functie de swapAnimation
 	static float currentScale = current;	
 	static float goalScale = goal;
-	static float inc = ((goal-current)*2)/((SECUNDA*.5f)/TIME_EVENT);
+	static float inc = ((goal-current)*2)/((SECUNDA*.5f)/TIME_EVENT_SWAP);
 
 	// se mareste img
 	currentScale += inc;
@@ -276,8 +328,8 @@ bool Game::moveAboveAnimation(POINT coordM,POINT direction, float current,float 
 
 
 	// se muta bomboana pe axele de coord
-	M[coordM.x][coordM.y].coord.x -= direction.x * (WIDTH_CANDY * SCALE) / ((SECUNDA * .5f) / TIME_EVENT);
-	M[coordM.x][coordM.y].coord.y -= direction.y * (HEIGHT_CANDY * SCALE) / ((SECUNDA * .5f) / TIME_EVENT);
+	M[coordM.x][coordM.y].coord.x -= direction.x * (WIDTH_CANDY * SCALE) / ((SECUNDA * .5f) / TIME_EVENT_SWAP);
+	M[coordM.x][coordM.y].coord.y -= direction.y * (HEIGHT_CANDY * SCALE) / ((SECUNDA * .5f) / TIME_EVENT_SWAP);
 	
 	// dupa ce am scazut inc si am ajus inapoi la SCALE-ul normal 
 	// se returneaza sugerand faptul ca eventul s-a terminat
@@ -295,8 +347,8 @@ bool Game::moveAboveAnimation(POINT coordM,POINT direction, float current,float 
 bool Game::moveOnLineAnimation(POINT coordM, POINT direction)
 {		
 	//std::cout << direction.x << ',' << direction.y << '\n';
-	M[coordM.x][coordM.y].coord.x += direction.x * (WIDTH_CANDY  * SCALE) /((SECUNDA * .5f) / TIME_EVENT);
-	M[coordM.x][coordM.y].coord.y += direction.y * (HEIGHT_CANDY * SCALE) /((SECUNDA * .5f) / TIME_EVENT);
+	M[coordM.x][coordM.y].coord.x += direction.x * (WIDTH_CANDY  * SCALE) /((SECUNDA * .5f) / TIME_EVENT_SWAP);
+	M[coordM.x][coordM.y].coord.y += direction.y * (HEIGHT_CANDY * SCALE) /((SECUNDA * .5f) / TIME_EVENT_SWAP);
 
 	//std::cout << M[coordM.x][coordM.y].coord.y << '\n';
 
@@ -304,64 +356,182 @@ bool Game::moveOnLineAnimation(POINT coordM, POINT direction)
 	const int i = ((WIDTH_CANDY  * SCALE) * (coordM.x + direction.x)) + (WIDTH_CANDY  * SCALE) / 2;
 	const int j = ((HEIGHT_CANDY * SCALE) * (coordM.y + direction.y)) + (HEIGHT_CANDY * SCALE) / 2;
 
-
 	if ((direction.y == 1 && M[coordM.x][coordM.y].coord.y >= j) || (direction.y == -1 && M[coordM.x][coordM.y].coord.y <= j)) 
 		return true;
 	
 	if ((direction.x == 1 && M[coordM.x][coordM.y].coord.x >= i) || (direction.x == -1 && M[coordM.x][coordM.y].coord.x <= i))
 		return true;
 
-
 	return false; 
 }
 
 
-POINT Game::CountCandies(POINT coordM)
+POINT Game::CountAndMarkCandies(POINT coordM)
 {
-	int counterX = 1 , counterY = 1;
-	counterX += CountCandiesOnLine({ coordM.x, coordM.y }, onHorizontal);
-	counterY += CountCandiesOnLine({ coordM.x, coordM.y }, onVertical);
-	return { counterX, counterY };
-}
+	// int counterX = 1 , counterY = 1;
+	// counterX += ParcurgereRecusiva({ coordM.x, coordM.y }, onHorizontal);
+	// counterY += ParcurgereRecusiva({ coordM.x, coordM.y }, onVertical);
+	// return { counterX, counterY };
+	int counterVertical = 1;
+	int counterHorizontal = 1;
+	bool down(1), up(1), right(1), left(1);
+	// var down, up, right, left sunt pentru atunci cand 
+	// chiar daca o bomboana are urm bomb de acelasi tip
+	// dar la un moment dat NU sa nu se contorizeze
+	// adica sunt necesare pentru a valida consecutivitatea
+	// bomboanelor de acelasi tip
 
-int Game::CountCandiesOnLine(POINT coordM,const int axes)
-{
+	bool quit = false;
+
 	int i = coordM.x, j = coordM.y;
-	M[i][j].toggled = true;
 
-	// Daca e onHorizontal => axes = 0 , un ex: i-1+axes = i-1, nu se schimba nimic
-	// Daca e onVertical => axes = 1 , un ex: i-1+axes = i => i ul va fi constant si se va schimba j ul
+	M[i][j].marked = true;
+	// inc = 1 inseamna ca eu analizez celula de +1 -> sus,jos,stanga dreapta
+	// inc = 2 inseamna ca eu analizez celula de +2 -> sus,jos,stanga dreapta
 
-	if (i>0	&& M[i - 1 + axes][j - axes].noCandy == M[i][j].noCandy && !M[i - 1 + axes][j - axes].toggled)
+	for (int inc = 1; !quit ;inc++)
 	{
-		return 1 + CountCandiesOnLine({ i - 1 + axes, j - axes }, axes);
+		quit = true;
+
+		if (i+inc<MDIM  && down && M[i+inc][j].noCandy == M[i][j].noCandy)
+		{
+			counterVertical++;
+			quit = false;
+			M[i+inc][j].marked = true;
+		}else down = false;
+
+		if (i-inc>=0 && up && M[i-inc][j].noCandy == M[i][j].noCandy)
+		{
+			counterVertical++;
+			quit = false;
+			M[i-inc][j].marked = true;
+		}else up = false;
+
+		if (j+inc<MDIM && right && M[i][j+inc].noCandy == M[i][j].noCandy)
+		{
+			counterHorizontal++;
+			quit = false;
+			M[i][j+inc].marked = true;
+		}else right = false;
+
+		if (j-inc>=0 && left && M[i][j-inc].noCandy == M[i][j].noCandy)
+		{
+			counterHorizontal++;
+			quit = false;
+			M[i][j-inc].marked = true;
+		}else left = false;
 	}
-	if (i<MDIM && M[i + 1 - axes][j + axes].noCandy == M[i][j].noCandy && !M[i + 1 - axes][j + axes].toggled)
+	if(counterHorizontal<3)
+	{	
+		//face false bomboanele adicente marcate si de acelasi tip dar care nu formeaza o formatie 
+		M[i][j-1].marked = (M[i][j-1].marked && !M[i][j-1].noCandy==M[i][j].noCandy);
+		M[i][j+1].marked = (M[i][j+1].marked && !M[i][j+1].noCandy==M[i][j].noCandy);
+	}
+	if(counterVertical<3)
 	{
-		return 1 + CountCandiesOnLine({ i + 1 - axes, j + axes }, axes);
+		M[i-1][j].marked =  (M[i-1][j].marked && !M[i-1][j].noCandy==M[i][j].noCandy);
+		M[i+1][j].marked =  (M[i+1][j].marked && !M[i+1][j].noCandy==M[i][j].noCandy);
 	}
-	return 0;
+	M[i][j].marked = false;
+
+	return	{counterHorizontal,counterVertical};
+
 }
 
-void Game::DestroyCandiesOnLine(POINT coordM,const int axes)
+void Game::MarkedCandiesEvent(bool destroy)
 {
-	int i = coordM.x, j = coordM.y;
-	M[i][j].toggled = false;
+	std::vector<POINT> coordCandiesToDestroy;
+	
+	for(int i=0; i<MDIM; i++)
+		for(int j=0; j<MDIM; j++){
+			if(M[i][j].marked && destroy)
+				coordCandiesToDestroy.push_back({i,j});
+			M[i][j].marked = false;
+		}
+	if(destroy){
+		if(DestroyCandiesAnimation(coordCandiesToDestroy))
+		{
+			std::cout << "S-a termiant animatia de distrugere";
+			for(auto coord : coordCandiesToDestroy){
+				M[coord.x][coord.y].noCandy = -1;  // -1 inseamna bomboana distrusa
 
-	// Daca e onHorizontal => axes = 0 , un ex: i-1+axes = i-1, nu se schimba nimic
-	// Daca e onVertical => axes = 1 , un ex: i-1+axes = i => i ul va fi constant si se va schimba j ul
+			}
+	
+			ReplaceDestroyedCandiesEvent();
 
-	if (i > 0 && M[i - 1 + axes][j - axes].toggled == M[i][j].noCandy && !M[i - 1 + axes][j - axes].toggled)
-	{
-		DestroyCandiesOnLine({ i - 1 + axes, j - axes },  axes);
+		}
 	}
-	if (i < MDIM && M[i + 1 - axes][j + axes].noCandy == M[i][j].noCandy && !M[i + 1 - axes][j + axes].toggled)
-	{
-		DestroyCandiesOnLine({ i + 1 - axes, j + axes }, axes);
-	}
-
 }
 
+bool Game::DestroyCandiesAnimation(std::vector<POINT> coordM)
+{
+	sf::Clock clock = sf::Clock();
+	sf::Time previousTime;							// secunda 0 
+	sf::Time currentTime = clock.getElapsedTime();	// timpul trecut 
+
+	float currentScale = SCALE;
+	float goalScale = 0.01;
+	float dec = ((goalScale-currentScale)*2)/((SECUNDA*.5f)/TIME_EVENT_DESTROY);
+
+	while (1) {
+		currentTime = clock.getElapsedTime();
+
+		if (currentTime.asMilliseconds() - previousTime.asMilliseconds() == TIME_EVENT_DESTROY)
+		{
+			currentScale += dec;
+
+			for(auto coord : coordM){
+				M[coord.x][coord.y].sprite.setScale({currentScale,currentScale});
+			}
+		
+			if(currentScale<=goalScale){
+				return true;
+			}
+			draw();
+			previousTime = currentTime;
+		}
+	}
+}
+
+bool Game::ReplaceDestroyedCandiesEvent(void)
+{	
+	bool bVef ;
+	sf::Clock clock;
+
+	do{
+		bVef = false;
+		std::vector<POINT> coordM;
+
+		for(int i=0; i<MDIM; i++) //merg pe coloana
+			for(int j=0; j<MDIM; j++) // pe linie
+				if(M[i][j].noCandy==-1 )
+				{
+					bVef=true;
+					coordM.push_back({i,j});
+				}
+				
+		while(1)
+		{
+			if (clock.getElapsedTime().asSeconds() == 1)
+			{
+				for(auto coord : coordM){
+					std::swap(M[coord.x][coord.y],M[coord.x][coord.y-1]);
+				}
+				for(int i=0; i<MDIM; i++)
+					if(M[i][0].noCandy==-1)M[i][0].noCandy = -2;
+					else if(M[i][0].noCandy==-2)M[i][0].noCandy = -3;
+
+				clock.restart();
+				coordM.clear();
+				AfisareMatrice();
+				break;
+			}
+		}
+	}
+	while(bVef);
+
+	return true;
+}
 
 Game::Game(unsigned int width, unsigned height):window(sf::VideoMode(width,height),"Game")
 {

@@ -1,6 +1,8 @@
 #pragma once
 #include "SFML/Graphics.hpp"
 #include <stdlib.h>
+#include <iostream>
+#include <vector>
 
 struct POINT
 {
@@ -12,10 +14,14 @@ struct COORD
 };
 
 enum {
-	onHorizontal,onVertical
+	onVertical,onHorizontal
 };
 enum {
 	above=1,below
+};
+
+enum {
+	countCandies,destroyCandies
 };
 
 
@@ -32,11 +38,9 @@ private:
 		COORD		coord;		//relative la mijlocul bomboanei
 		int			noCandy;
 		int			swaped = 0;		// 0-false  1-candy moving above 2-candy moving below 
-		bool		destroyed = false;
-		bool		toggled = false;
+		bool 		marked = false;
 
-	}
-	M[8][8];
+	}M[8][8];
 
 
 	struct{
@@ -55,8 +59,17 @@ private:
 	void mouseDrag(int CoordX, int CoordY);
 	void swapCandies(sf::Event e);
 	int CountCandiesOnLine(POINT coordM,const int axes);
-	void DestroyCandiesOnLine(POINT coordM, const int axes);
-	POINT CountCandies(POINT coordM);
+	bool DestroyCandiesAnimation(std::vector<POINT> coordM);
+	POINT CountAndMarkCandies(POINT coordM);
+	void MarkedCandiesEvent(bool destroy=true);
+	void DestroyCandyAnimation(POINT coordM);
+	bool ReplaceDestroyedCandiesEvent(void);
+	void AfisareMatrice(void);
+
+
+	int ParcurgereRecusiva(POINT coordM,const int axes, int type=countCandies);
+
+	void updateMatrix(void);
 
 	bool swapAnimation(POINT coordMSelectedCandy, POINT coordMToSwapCandy);
 	bool moveAboveAnimation(POINT coordM, POINT direction, float current , float goal);
