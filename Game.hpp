@@ -17,7 +17,7 @@ enum {
 	onVertical,onHorizontal
 };
 enum {
-	above=1,below
+	above=1,below,start_game
 };
 
 enum {
@@ -53,7 +53,9 @@ private:
 	void incarcareImagini(void);
 	void handleEvents(void);
 	void setPositonOfSprites(void);
+	void generateCandy(POINT coordM);
 
+	void draw(POINT FirstCandy, POINT SecondCandy);
 	void draw();
 	POINT parseCoord(POINT coord);
 	void mouseDrag(int CoordX, int CoordY);
@@ -65,6 +67,8 @@ private:
 	void DestroyCandyAnimation(POINT coordM);
 	bool ReplaceDestroyedCandiesEvent(void);
 	void AfisareMatrice(void);
+
+	bool CautareDeFormatiiInMatrice();
 
 
 	int ParcurgereRecusiva(POINT coordM,const int axes, int type=countCandies);
