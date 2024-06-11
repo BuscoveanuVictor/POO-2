@@ -39,6 +39,8 @@ POINT Game::parseCoord(POINT coord)
 
 ///////////////////////////////
 
+
+//Functie ajutatoare pt a vizualiza matricea
 void Game::AfisareMatrice(void)
 {
 	std::cout << '\n';
@@ -85,12 +87,21 @@ void Game::initializareMatrice(void)
 
 void Game::incarcareImagini(void) 
 {	
+
 	sf::Image candies;
-	if (!candies.loadFromFile("images/candies.png")) 
+	try
 	{
-		std::cout << "ERROR 404";
+		// 1. Incarc sprite-ul de imagini
+		candies.loadFromFile("images/candies.png");
+	}
+	catch(const std::exception& e)
+	{
+		std::cerr << e.what() << '\n';
 		return;
 	}
+
+	// 2.Daca la pasul 1 nu am eroare sectionez sprite-ul
+	// si fiecare index din vector reprezinte o bomboana diferita
 	for (int i = 0; i < 6; i++) 
 		imgCandy[i].loadFromImage
 			(candies, sf::IntRect(i * WIDTH_CANDY, 0, WIDTH_CANDY, HEIGHT_CANDY));
@@ -107,6 +118,7 @@ void Game::setPositonOfSprites(void)
 		}
 }
 
+// Afisarea vizuala a matricei
 void Game::draw()
 {
 	window.clear(sf::Color::Cyan);
@@ -115,13 +127,15 @@ void Game::draw()
 
 	for (int i = 0; i < MDIM; i++)
 		for (int j = 0; j < MDIM; j++)
-			if(M[i][j].noCandy==-1){
+			if(M[i][j].noCandy==-1) // -1 inseamna bomboana distrusa 
 				M[i][j].sprite.setColor(sf::Color::Cyan);
-			}
 			else
 				window.draw(M[i][j].sprite);
 }
 
+// Afisarea matricei tinanad cont de efectul de trecere
+// pe deasupra/dedesupt a bomboanelor care participa
+// la evenimentul de swap
 void Game::draw(POINT FirstCandy, POINT SecondCandy)
 {
 	draw();
@@ -225,6 +239,8 @@ void Game::swapCandies(sf::Event e)
 				else {
 					bool bTag;
 					do {
+						// Daca param MarkedCandiesEvent este true
+						// inseamna ca trebuie distruse
 						MarkedCandiesEvent(true);
 						bTag=CautareDeFormatiiInMatrice();
 					}while(bTag);
@@ -444,7 +460,7 @@ POINT Game::CountAndMarkCandies(POINT coordM)
 	}
 	if(counterHorizontal<3)
 	{	
-		//face false bomboanele adicente marcate si de acelasi tip dar care nu formeaza o formatie 
+		//face false bomboanele adicente marcate si de acelasi tip, dar care nu formeaza o formatie 
 		M[i][j-1].marked = (M[i][j-1].marked && !M[i][j-1].noCandy==M[i][j].noCandy);
 		M[i][j+1].marked = (M[i][j+1].marked && !M[i][j+1].noCandy==M[i][j].noCandy);
 	}
@@ -463,14 +479,19 @@ void Game::MarkedCandiesEvent(bool destroy)
 {
 	std::vector<POINT> coordCandiesToDestroy;
 	sf::Image image;
-	image.createMaskFromColor(sf::Color(0, 255, 0, 0), 0);
 	sf::Texture texture;
+	
+	image.createMaskFromColor(sf::Color(0, 255, 0, 0), 0); 
+	// mai sus fac transparenta imaginea bomboanei distruse 
 	texture.loadFromImage(image);
 
 	for(int i=0; i<MDIM; i++)
 		for(int j=0; j<MDIM; j++){
 			if(M[i][j].marked && destroy)
-				coordCandiesToDestroy.push_back({i,j});
+				coordCandiesToDestroy.push_back({i,j}); 
+				// mai sus stochez coord bomboanelor care sunt marcate
+				// si trebuie distruse ca mai apoi sa intru cu ele
+				// in eventul de destroy candies si sa le distrug simultan
 			M[i][j].marked = false;
 		}
 	if(destroy){
@@ -498,6 +519,8 @@ bool Game::DestroyCandiesAnimation(std::vector<POINT> coordM)
 
 	while (1) {
 		currentTime = clock.getElapsedTime();
+
+		// animatia aceasta consta in micsorarea bomboanelor 'distruse' pana la goal scale 
 
 		if (currentTime.asMilliseconds() - previousTime.asMilliseconds() == TIME_EVENT_DESTROY)
 		{
@@ -532,8 +555,9 @@ bool Game::ReplaceDestroyedCandiesEvent(void)
 				if(M[i][j].noCandy==-1)
 				{
 					bVef = true;
-					if(j==0) 
-						generateCandy({i,j});
+					if(j==0) generateCandy({i,j}); 
+						// daca a ajus pe linia 0 trebuie
+						// sa generez o bomboana noua
 					else 
 					{
 						AmDatReplace = false;
@@ -544,22 +568,25 @@ bool Game::ReplaceDestroyedCandiesEvent(void)
 
 		while(!AmDatReplace)
 		{
+			// un mod mai usor de scris timerul
 			if (clock.getElapsedTime().asMilliseconds() == 1)
 			{
 				bTag = false;
 				for(auto coord : coordM)
-				{
+					// aici se face intreschimbarea
 					if(moveOnLineAnimation(coord, {0,-1}) && 
 						moveOnLineAnimation({coord.x,coord.y-1}, {0,1}))
 					{
 							std::swap(M[coord.x][coord.y],M[coord.x][coord.y-1]);
+							// se draw aici si display mai tarziu
+							// pentru a se crea efectul de cadere simultana
+							// a bomboanelor, de accea si timpul 
+							// intervalului este foarte mic
 							draw();
 							bTag =true;
 					}
 					
-				}
-				if(bTag)
-					window.display();
+				if(bTag)window.display();
 				
 				clock.restart();
 				
