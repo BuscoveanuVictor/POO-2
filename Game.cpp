@@ -5,16 +5,8 @@
 #include <stdlib.h>
 #include <vector>
 
-#define	MDIM				7		//Dim matrice
-#define WIDTH_CANDY			133
-#define HEIGHT_CANDY    	138
-#define SCALE				0.5f
-#define SECUNDA				1000	//Milisec
-#define TIME_EVENT_SWAP		10		//Milisec -> repezinta timpul cu care se intampla un event de tip swap
-#define TIME_EVENT_DESTROY	5		
 
-
-///// Functii ajutatoare //////
+///////////////// Functii ajutatoare /////////////////////
 
 std::ostream& operator<<(std::ostream& out, const POINT& P){
 	out << '(' << P.x << ' ' << P.y << ')' << '\n';
@@ -37,9 +29,6 @@ POINT Game::parseCoord(POINT coord)
 
 }
 
-///////////////////////////////
-
-
 //Functie ajutatoare pt a vizualiza matricea
 void Game::AfisareMatrice(void)
 {
@@ -57,6 +46,9 @@ void Game::AfisareMatrice(void)
 	}
 	std::cout << '\n';
 }
+
+////////////////////////////////////////////////////
+
 
 void Game::generateCandy(POINT coordM){
 	

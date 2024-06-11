@@ -4,6 +4,16 @@
 #include <iostream>
 #include <vector>
 
+
+#define	MDIM				7		//Dim matrice
+#define WIDTH_CANDY			133
+#define HEIGHT_CANDY    	138
+#define SCALE				0.5f
+#define SECUNDA				1000	//Milisec
+#define TIME_EVENT_SWAP		10		//Milisec -> repezinta timpul cu care se intampla un event de tip swap
+#define TIME_EVENT_DESTROY	5		
+
+
 struct POINT
 {
 	int x,y;
@@ -38,14 +48,12 @@ private:
 		int			swaped = 0;		// 0-false  1-candy moving above 2-candy moving below 
 		bool 		marked = false;
 
-	}M[8][8];
-
+	}M[MDIM][MDIM];
 
 	struct{
 		bool pressed = false;
 		POINT coordM;
 	}mouse;
-
 
 	void initializareMatrice(void);
 	void incarcareImagini(void);
